@@ -35,15 +35,6 @@ class DHTHandler:
                 return None, None
         return None, None
 
-    async def get_players_in_room(self, room_id, all_player_ids):
-        peers = []
-        for pid in all_player_ids:
-            if not pid: continue
-            addr, room = await self.get_player_data(pid)
-            if room == room_id:
-                peers.append({"id": pid, "addr": addr})
-        return peers
-
     async def register_player_globally(self, player_id):
         """Atualiza a lista global de jogadores de forma simples."""
         raw = await self.server.get("__players__")
@@ -75,8 +66,11 @@ class DHTHandler:
 
     # ADICIONADO: Obtém quem está na sala
     async def get_players_in_room(self, room_id):
+        print(f"\n>>>>>>> DEBUG DHT: A BUSCAR SALA {room_id} <<<<<<<")
         key = f"ROOM_{room_id}"
         val = await self.server.get(key)
+        data = json.loads(val) if val else {}
+        print(f"[DEBUG DHT] Sala: {room_id} | Dados encontrados: {data}")
         return json.loads(val) if val else {}
 
     def stop(self):

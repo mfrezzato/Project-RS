@@ -3,14 +3,15 @@ import asyncio
 class Mage:
     def __init__(self, player_id, player_name, element):
         self.player_id = player_id
-        self.player_name = player_name  # NOVO: Guardamos o nome para passar à Interface
+        self.player_name = player_name  # Mantido
         self.element = element  # "FOGO", "GELO", "TERRA", "AR"
+        self.death_event = asyncio.Event()
         
         # Atributos base
         self.max_hp = 100
         self.hp = 100
         self.max_mana = 100
-        self.mana = 100  # ALTERAÇÃO: Começar com a mana cheia para ser mais fácil testar!
+        self.mana = 100
         
         # Configuração por elemento
         self.skills = self._setup_skills()
@@ -18,14 +19,14 @@ class Mage:
         
         # Status do jogo
         self.is_alive = True
-        self.room_id = "SALA_1" # Mudei o nome para bater certo com os outros ficheiros
+        self.room_id = "SALA_1"
 
     def _setup_skills(self):
         """Define os custos e danos base de cada tipo de mago."""
         configs = {
             "FOGO":  {"skill": "Bola de Fogo", "dano": 40, "custo": 40},
             "GELO":  {"skill": "Nevasca",      "dano": 25, "custo": 30},
-            "TERRA": {"skill": "Pedrada",      "dano": 35, "custo": 25}, # Mudei isto para ser um ataque
+            "TERRA": {"skill": "Pedrada",      "dano": 35, "custo": 25},
             "AR":    {"skill": "Tornado",      "dano": 20, "custo": 20}
         }
         return configs.get(self.element, configs["FOGO"])
@@ -34,7 +35,6 @@ class Mage:
         """Loop assíncrono que regenera mana a cada 2 segundos."""
         while self.is_alive:
             if self.mana < self.max_mana:
-                # Recupera 5 de mana por ciclo
                 self.mana = min(self.max_mana, self.mana + 5)
             await asyncio.sleep(2)
 
@@ -45,12 +45,13 @@ class Mage:
             return False, self.hp  # hit=False, Não sofreu dano
         
         self.hp = max(0, self.hp - amount)
-        if self.hp == 0:
+        if self.hp <= 0:
             self.is_alive = False
+            self.death_event.set()
         return True, self.hp
 
     def activate_shield(self):
-        """NOVO: Tenta ativar o escudo gastando mana localmente."""
+        """Tenta ativar o escudo gastando mana localmente."""
         custo_escudo = 20
         if not self.shielded:
             if self.use_mana(custo_escudo):
@@ -60,7 +61,7 @@ class Mage:
         return False, "O teu escudo já está ativo!"
 
     def get_attack_info(self):
-        """NOVO: Retorna o dano, custo e nome da skill do mago para ser usada pela UI."""
+        """Retorna o dano, custo e nome da skill do mago."""
         return self.skills["dano"], self.skills["custo"], self.skills["skill"]
 
     def use_mana(self, amount):

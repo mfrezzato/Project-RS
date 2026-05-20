@@ -10,6 +10,10 @@
 
 # Comandos a utilizar:
 
+0. Gerar os ficheiros proto quando é preciso
+
+- python3 -m grpc_tools.protoc -I./proto --python_out=. --grpc_python_out=. game.proto
+
 1. Criar o ambiente venv
 
 - python3 -m venv venv

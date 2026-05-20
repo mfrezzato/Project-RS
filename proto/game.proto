@@ -23,6 +23,9 @@ service MageService {
   
   // Um simples "estou vivo" para manter a rede ativa
   rpc Heartbeat (Ping) returns (Pong);
+
+  // NOVO: RPC de morte
+  rpc PlayerDied(PlayerDiedRequest) returns (google.protobuf.Empty);
 }
 
 message SpellRequest {
@@ -40,14 +43,14 @@ message SpellResponse {
 
 message MoveRequest {
   string player_id = 1;
-  string room_id = 2;      // "SALA_1", "SALA_2", etc.
+  string room_id = 2;     // "SALA_1", "SALA_2", etc.
 }
 
 message ChatMessage {
   string player_id = 1;
   string sender_name = 2;
-  string content = 3;      // O texto da mensagem
-  string room_id = 4;      // Para saber se a mensagem é para a mesma sala
+  string content = 3;     // O texto da mensagem
+  string room_id = 4;     // Para saber se a mensagem é para a mesma sala
 }
 
 message LeaveRequest {
@@ -57,7 +60,7 @@ message LeaveRequest {
 message StateRequest {
   string player_id = 1;
   string player_name = 2;
-  string class_type = 3; // "FOGO", "GELO" (Para os poderes especiais no futuro)
+  string class_type = 3; // "FOGO", "GELO"
   int32 hp = 4;
   int32 mana = 5;
   string room_id = 6;
@@ -69,4 +72,8 @@ message Ping {
 
 message Pong {
   bool alive = 1;
+}
+
+message PlayerDiedRequest {
+   string player_id = 1; 
 }

@@ -45,6 +45,11 @@ class MageServiceStub(object):
                 request_serializer=game__pb2.Ping.SerializeToString,
                 response_deserializer=game__pb2.Pong.FromString,
                 )
+        self.PlayerDied = channel.unary_unary(
+                '/projetors.MageService/PlayerDied',
+                request_serializer=game__pb2.PlayerDiedRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
 
 
 class MageServiceServicer(object):
@@ -92,6 +97,13 @@ class MageServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def PlayerDied(self, request, context):
+        """NOVO: RPC de morte
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_MageServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -124,6 +136,11 @@ def add_MageServiceServicer_to_server(servicer, server):
                     servicer.Heartbeat,
                     request_deserializer=game__pb2.Ping.FromString,
                     response_serializer=game__pb2.Pong.SerializeToString,
+            ),
+            'PlayerDied': grpc.unary_unary_rpc_method_handler(
+                    servicer.PlayerDied,
+                    request_deserializer=game__pb2.PlayerDiedRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -234,5 +251,22 @@ class MageService(object):
         return grpc.experimental.unary_unary(request, target, '/projetors.MageService/Heartbeat',
             game__pb2.Ping.SerializeToString,
             game__pb2.Pong.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def PlayerDied(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/projetors.MageService/PlayerDied',
+            game__pb2.PlayerDiedRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

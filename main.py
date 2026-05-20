@@ -49,13 +49,44 @@ async def main():
 
     mana_task = asyncio.create_task(mage.regen_mana_loop())
 
+    # Criar tarefas para o input e para o evento de morte
+    death_task = asyncio.create_task(mage.death_event.wait())
+
     try:
         while mage.is_alive:
             interface.clear_screen()
             interface.render_map(mage.room_id)
             interface.display_status(mage)
+
+            input_task = asyncio.create_task(interface.get_input())
             
-            comando_raw = await interface.get_input()
+            # ESPERA PELO INPUT OU PELA MORTE (O que acontecer primeiro)
+            done, pending = await asyncio.wait(
+                [input_task, death_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+
+            # --- VERIFICAÇÃO DE MORTE EM TEMPO REAL ---
+            if death_task in done:
+                
+                print("\n\n###############################")
+                print("       MORRESTE! GAME OVER     ")
+                print("###############################\n")
+
+                inimigos = await dht.get_players_in_room(mage.room_id)
+                for pid, addr in inimigos.items():
+                    if pid != player_id:
+                        try:
+                            await client.notify_death(addr, player_id) 
+                        except Exception: 
+                            pass
+                input_task.cancel()
+                await asyncio.sleep(2) 
+                break 
+
+            # --- PROCESSAMENTO DE COMANDO ---
+            comando_raw = input_task.result()
+            
             partes = comando_raw.upper().split()
             if not partes: continue
 
@@ -64,10 +95,8 @@ async def main():
             if cmd == "MOVER" and len(partes) > 1:
                 nova = f"SALA_{partes[1]}"
                 if engine.validar_movimento(mage.room_id, nova):
-                    old_room = mage.room_id # Guarda a antiga
+                    old_room = mage.room_id
                     mage.room_id = nova
-                    
-                    # 1. Remove da antiga, 2. Adiciona na nova
                     await dht.remove_from_room(player_id, old_room)
                     await dht.announce_presence(player_id, meu_ip, grpc_port, nova)
                 else:
@@ -96,7 +125,7 @@ async def main():
             elif cmd == "SAIR":
                 break
             
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)
 
     finally:
         mana_task.cancel()

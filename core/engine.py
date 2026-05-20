@@ -57,6 +57,13 @@ class GameEngine:
                 if pid != exclude_id: # Para não enviarmos mensagens a nós próprios
                     addresses.append(data["addr"])
         return addresses
+
+    def get_player_room(self, player_id):
+        """Retorna a sala do jogador pelo ID, ou None se o jogador não existir."""
+        player_data = self.players.get(player_id)
+        if player_data:
+            return player_data.get("room_id")
+        return None
         
     def get_all_known_addresses(self):
         """Retorna os endereços de toda a gente na rede que nós conhecemos."""
