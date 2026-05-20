@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package projetors;
+
+// O serviço que cada jogador (servidor gRPC) tem de implementar
+service MageService {
+  
+  // Chamado quando um mago lança um feitiço contra ti
+  rpc CastSpell (SpellRequest) returns (SpellResponse);
+  
+  // Chamado para avisar os outros que entraste numa nova sala
+  rpc UpdatePosition (MoveRequest) returns (Empty);
+  
+  // Chamado para sincronizar o estado (Mana/Vida) se necessário
+  rpc SyncState (StateRequest) returns (Empty);
+  
+  // Um simples "estou vivo" para manter a rede ativa
+  rpc Heartbeat (Ping) returns (Pong);
+}
+
+message SpellRequest {
+  string attacker_id = 1;
+  int32 damage = 2;
+  string element_type = 3; // "FOGO", "GELO", "TERRA", "AR"
+}
+
+message SpellResponse {
+  bool shielded = 1;      // Se o mago usou defesa
+  int32 current_hp = 2;
+  string message = 3;
+}
+
+message MoveRequest {
+  string player_id = 1;
+  string room_id = 2;      // "SALA_1", "SALA_2", etc.
+}
+
+message StateRequest {
+  string player_id = 1;
+  int32 hp = 2;
+  int32 mana = 3;
+}
+
+message Ping {
+  string player_id = 1;
+}
+
+message Pong {
+  bool alive = 1;
+}
+
+message Empty {}
