@@ -1,8 +1,8 @@
 import logging
 import asyncio
+import json
 from kademlia.network import Server
 
-# Silenciar logs da biblioteca kademlia
 logging.getLogger("kademlia").setLevel(logging.WARNING)
 
 class DHTHandler:
@@ -10,28 +10,22 @@ class DHTHandler:
         self.server = Server()
         
     async def start(self, port, bootstrap_ip=None, bootstrap_port=8468):
-        """
-        Inicia o servidor DHT.
-        A alteração crucial para LAN é 'interface="0.0.0.0"'.
-        """
-        # Escuta em todas as interfaces de rede para receber pacotes de outros PCs
         await self.server.listen(port, interface='0.0.0.0')
-        
         if bootstrap_ip:
-            # Conecta ao host da partida na rede local
+            # Tenta conectar ao bootstrap; usa um timeout para não bloquear
             await self.server.bootstrap([(bootstrap_ip, bootstrap_port)])
-            print(f"[DHT] Conectado ao bootstrap em {bootstrap_ip}:{bootstrap_port}")
+            print(f"[DHT] Conectado à rede DHT em {bootstrap_ip}:{bootstrap_port}")
         else:
             print(f"[DHT] Nó semente iniciado na porta {port}")
 
     async def register_player(self, player_id, ip, port, room):
-        """Guarda IP:PORTA|SALA na rede P2P."""
-        # O 'ip' aqui deve ser o IP da tua máquina na LAN (ex: 192.168.1.x)
+        # Guarda: IP:PORTA|SALA
         data = f"{ip}:{port}|{room}"
         await self.server.set(player_id, data)
+        # Pequena pausa para permitir a propagação na rede DHT
+        await asyncio.sleep(0.5)
 
     async def get_player_data(self, player_id):
-        """Recupera dados de um jogador."""
         val = await self.server.get(player_id)
         if val:
             try:
@@ -41,15 +35,49 @@ class DHTHandler:
                 return None, None
         return None, None
 
-    async def find_enemies_in_room(self, my_id, my_room, all_ids):
-        """Procura magos na mesma sala."""
-        enemies = []
-        for pid in all_ids:
-            if pid == my_id: continue
+    async def get_players_in_room(self, room_id, all_player_ids):
+        peers = []
+        for pid in all_player_ids:
+            if not pid: continue
             addr, room = await self.get_player_data(pid)
-            if room == my_room:
-                enemies.append({"id": pid, "addr": addr})
-        return enemies
+            if room == room_id:
+                peers.append({"id": pid, "addr": addr})
+        return peers
+
+    async def register_player_globally(self, player_id):
+        """Atualiza a lista global de jogadores de forma simples."""
+        raw = await self.server.get("__players__")
+        players = raw.split(",") if raw else []
+        if player_id not in players:
+            players.append(player_id)
+            await self.server.set("__players__", ",".join(players))
+            await asyncio.sleep(0.5)
+
+    async def get_all_players(self):
+        raw = await self.server.get("__players__")
+        return raw.split(",") if raw else []
+
+    async def announce_presence(self, player_id, ip, port, room_id):
+        key = f"ROOM_{room_id}"
+        val = await self.server.get(key)
+        players = json.loads(val) if val else {}
+        players[player_id] = f"{ip}:{port}"
+        await self.server.set(key, json.dumps(players))
+        await asyncio.sleep(0.5)
+
+    async def remove_from_room(self, player_id, room_id):
+        key = f"ROOM_{room_id}"
+        val = await self.server.get(key)
+        players = json.loads(val) if val else {}
+        if player_id in players:
+            del players[player_id]
+            await self.server.set(key, json.dumps(players))
+
+    # ADICIONADO: Obtém quem está na sala
+    async def get_players_in_room(self, room_id):
+        key = f"ROOM_{room_id}"
+        val = await self.server.get(key)
+        return json.loads(val) if val else {}
 
     def stop(self):
         self.server.stop()

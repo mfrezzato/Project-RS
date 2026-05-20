@@ -3,11 +3,11 @@
 import grpc
 
 import game_pb2 as game__pb2
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
 class MageServiceStub(object):
-    """O serviço que cada jogador (servidor gRPC) tem de implementar
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -23,12 +23,22 @@ class MageServiceStub(object):
         self.UpdatePosition = channel.unary_unary(
                 '/projetors.MageService/UpdatePosition',
                 request_serializer=game__pb2.MoveRequest.SerializeToString,
-                response_deserializer=game__pb2.Empty.FromString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
+        self.SendMessage = channel.unary_unary(
+                '/projetors.MageService/SendMessage',
+                request_serializer=game__pb2.ChatMessage.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
+        self.LeaveGame = channel.unary_unary(
+                '/projetors.MageService/LeaveGame',
+                request_serializer=game__pb2.LeaveRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
         self.SyncState = channel.unary_unary(
                 '/projetors.MageService/SyncState',
                 request_serializer=game__pb2.StateRequest.SerializeToString,
-                response_deserializer=game__pb2.Empty.FromString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
         self.Heartbeat = channel.unary_unary(
                 '/projetors.MageService/Heartbeat',
@@ -38,25 +48,38 @@ class MageServiceStub(object):
 
 
 class MageServiceServicer(object):
-    """O serviço que cada jogador (servidor gRPC) tem de implementar
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def CastSpell(self, request, context):
-        """Chamado quando um mago lança um feitiço contra ti
+        """ATACAR: Chamado quando um mago lança um feitiço contra ti
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def UpdatePosition(self, request, context):
-        """Chamado para avisar os outros que entraste numa nova sala
+        """MOVER: Chamado para avisar os outros que entraste numa nova sala
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SendMessage(self, request, context):
+        """FALAR: Novo! Envia uma mensagem de chat para os outros na sala
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def LeaveGame(self, request, context):
+        """SAIR: Novo! Avisa os outros que te desconectaste para te removerem do ecrã
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SyncState(self, request, context):
-        """Chamado para sincronizar o estado (Mana/Vida) se necessário
+        """Chamado para sincronizar o estado (Mana/Vida/Classe) quando alguém entra na tua sala
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -80,12 +103,22 @@ def add_MageServiceServicer_to_server(servicer, server):
             'UpdatePosition': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdatePosition,
                     request_deserializer=game__pb2.MoveRequest.FromString,
-                    response_serializer=game__pb2.Empty.SerializeToString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'SendMessage': grpc.unary_unary_rpc_method_handler(
+                    servicer.SendMessage,
+                    request_deserializer=game__pb2.ChatMessage.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'LeaveGame': grpc.unary_unary_rpc_method_handler(
+                    servicer.LeaveGame,
+                    request_deserializer=game__pb2.LeaveRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'SyncState': grpc.unary_unary_rpc_method_handler(
                     servicer.SyncState,
                     request_deserializer=game__pb2.StateRequest.FromString,
-                    response_serializer=game__pb2.Empty.SerializeToString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'Heartbeat': grpc.unary_unary_rpc_method_handler(
                     servicer.Heartbeat,
@@ -100,8 +133,7 @@ def add_MageServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class MageService(object):
-    """O serviço que cada jogador (servidor gRPC) tem de implementar
-    """
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
     def CastSpell(request,
@@ -133,7 +165,41 @@ class MageService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/projetors.MageService/UpdatePosition',
             game__pb2.MoveRequest.SerializeToString,
-            game__pb2.Empty.FromString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def SendMessage(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/projetors.MageService/SendMessage',
+            game__pb2.ChatMessage.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def LeaveGame(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/projetors.MageService/LeaveGame',
+            game__pb2.LeaveRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -150,7 +216,7 @@ class MageService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/projetors.MageService/SyncState',
             game__pb2.StateRequest.SerializeToString,
-            game__pb2.Empty.FromString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

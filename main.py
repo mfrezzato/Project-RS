@@ -9,10 +9,8 @@ from network.grpc_client import MageClient
 from ui.interface import Interface
 
 def get_local_ip():
-    """Descobre o IP da máquina na rede local."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        # Tenta conectar a um IP externo (não envia dados) para descobrir o IP local da interface
         s.connect(('8.8.8.8', 80))
         ip = s.getsockname()[0]
     except Exception:
@@ -31,80 +29,80 @@ async def main():
     grpc_port = int(sys.argv[3])
     bootstrap_ip = sys.argv[4] if len(sys.argv) > 4 else None
 
-    # Inicialização da instância do Mago
-    mage_instance = Mage(player_id, element)
+    # Inicializar instâncias
+    mage = Mage(player_id, player_id, element)
     engine = GameEngine()
     dht = DHTHandler()
-    client = MageClient(player_id)
+    client = MageClient(player_id, player_id)
     interface = Interface()
 
-    # Logica de portas
-    if bootstrap_ip is None:
-        dht_port = 8468 
-    else:
-        dht_port = grpc_port + 1000
-
-    # Iniciar componentes de rede
+    # Configuração de rede
+    dht_port = 8468 if bootstrap_ip is None else (grpc_port + 1000)
     await dht.start(dht_port, bootstrap_ip)
-    # AQUI: Chamada com a instância correta
-    server = await serve(mage_instance, grpc_port)
     
-    # AQUI: IP Dinâmico para a LAN
+    server = await serve(mage, engine, grpc_port)
     meu_ip = get_local_ip()
-    print(f"[!] Mago iniciado no IP: {meu_ip}:{grpc_port}")
     
-    await dht.register_player(player_id, meu_ip, grpc_port, mage_instance.current_room)
+    # Registar presença inicial
+    await dht.announce_presence(player_id, meu_ip, grpc_port, mage.room_id)
+    await asyncio.sleep(2)
 
-    jogadores_na_rede = ["Joao", "Ana", "Pedro", "Mago1", "Mago2", "Maria"]
-    mana_task = asyncio.create_task(mage_instance.regen_mana_loop())
+    mana_task = asyncio.create_task(mage.regen_mana_loop())
 
     try:
-        while mage_instance.is_alive:
+        while mage.is_alive:
             interface.clear_screen()
-            interface.render_map(mage_instance.current_room)
-            interface.display_status(mage_instance)
+            interface.render_map(mage.room_id)
+            interface.display_status(mage)
             
             comando_raw = await interface.get_input()
             partes = comando_raw.upper().split()
             if not partes: continue
 
             cmd = partes[0]
+            
             if cmd == "MOVER" and len(partes) > 1:
                 nova = f"SALA_{partes[1]}"
-                if engine.validar_movimento(mage_instance.current_room, nova):
-                    mage_instance.current_room = nova
-                    # Registar nova posição na DHT com o IP correto
-                    await dht.register_player(player_id, meu_ip, grpc_port, nova)
+                if engine.validar_movimento(mage.room_id, nova):
+                    old_room = mage.room_id # Guarda a antiga
+                    mage.room_id = nova
+                    
+                    # 1. Remove da antiga, 2. Adiciona na nova
+                    await dht.remove_from_room(player_id, old_room)
+                    await dht.announce_presence(player_id, meu_ip, grpc_port, nova)
                 else:
                     interface.show_message("Caminho bloqueado!")
 
             elif cmd == "ATACAR":
-                if mage_instance.use_mana(mage_instance.skills['custo']):
-                    inimigos = await dht.find_enemies_in_room(player_id, mage_instance.current_room, jogadores_na_rede)
-                    if not inimigos:
-                        interface.show_message("Sala vazia...")
-                    else:
-                        for ini in inimigos:
-                            # O client vai conectar-se ao IP real obtido da DHT
-                            res = await client.cast_spell(ini['addr'], mage_instance.skills['dano'], mage_instance.element)
-                            if res:
-                                msg = "Defesa!" if res.shielded else f"Dano! HP: {res.current_hp}"
-                                interface.show_message(f"Alvo {ini['id']}: {msg}")
+                inimigos = await dht.get_players_in_room(mage.room_id)
+                alvos = {pid: addr for pid, addr in inimigos.items() if pid != player_id}
+                
+                if not alvos:
+                    interface.show_message("Sala vazia...")
                 else:
-                    interface.show_message("Sem mana!")
+                    dano, custo, skill = mage.get_attack_info()
+                    if mage.use_mana(custo):
+                        for pid, addr in alvos.items():
+                            res = await client.cast_spell(addr, dano, mage.element)
+                            if res:
+                                interface.show_message(f"Ataque a {pid}: {res.message}")
+                    else:
+                        interface.show_message("Mana insuficiente!")
 
             elif cmd == "ESCUDO":
-                if mage_instance.use_mana(20):
-                    mage_instance.shielded = True
-                    interface.show_message("Escudo ativo!")
-
-            elif cmd == "SAIR": break
-            await asyncio.sleep(1.2)
+                sucesso, msg = mage.activate_shield()
+                interface.show_message(msg)
+            
+            elif cmd == "SAIR":
+                break
+            
+            await asyncio.sleep(0.5)
 
     finally:
         mana_task.cancel()
         dht.stop()
         await server.stop(0)
+        print("Jogo terminado.")
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -12,29 +12,32 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ngame.proto\x12\tprojetors\"I\n\x0cSpellRequest\x12\x13\n\x0b\x61ttacker_id\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x61mage\x18\x02 \x01(\x05\x12\x14\n\x0c\x65lement_type\x18\x03 \x01(\t\"F\n\rSpellResponse\x12\x10\n\x08shielded\x18\x01 \x01(\x08\x12\x12\n\ncurrent_hp\x18\x02 \x01(\x05\x12\x0f\n\x07message\x18\x03 \x01(\t\"1\n\x0bMoveRequest\x12\x11\n\tplayer_id\x18\x01 \x01(\t\x12\x0f\n\x07room_id\x18\x02 \x01(\t\";\n\x0cStateRequest\x12\x11\n\tplayer_id\x18\x01 \x01(\t\x12\n\n\x02hp\x18\x02 \x01(\x05\x12\x0c\n\x04mana\x18\x03 \x01(\x05\"\x19\n\x04Ping\x12\x11\n\tplayer_id\x18\x01 \x01(\t\"\x15\n\x04Pong\x12\r\n\x05\x61live\x18\x01 \x01(\x08\"\x07\n\x05\x45mpty2\xf0\x01\n\x0bMageService\x12>\n\tCastSpell\x12\x17.projetors.SpellRequest\x1a\x18.projetors.SpellResponse\x12:\n\x0eUpdatePosition\x12\x16.projetors.MoveRequest\x1a\x10.projetors.Empty\x12\x36\n\tSyncState\x12\x17.projetors.StateRequest\x1a\x10.projetors.Empty\x12-\n\tHeartbeat\x12\x0f.projetors.Ping\x1a\x0f.projetors.Pongb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ngame.proto\x12\tprojetors\x1a\x1bgoogle/protobuf/empty.proto\"`\n\x0cSpellRequest\x12\x13\n\x0b\x61ttacker_id\x18\x01 \x01(\t\x12\x15\n\rattacker_name\x18\x02 \x01(\t\x12\x0e\n\x06\x64\x61mage\x18\x03 \x01(\x05\x12\x14\n\x0c\x65lement_type\x18\x04 \x01(\t\"F\n\rSpellResponse\x12\x10\n\x08shielded\x18\x01 \x01(\x08\x12\x12\n\ncurrent_hp\x18\x02 \x01(\x05\x12\x0f\n\x07message\x18\x03 \x01(\t\"1\n\x0bMoveRequest\x12\x11\n\tplayer_id\x18\x01 \x01(\t\x12\x0f\n\x07room_id\x18\x02 \x01(\t\"W\n\x0b\x43hatMessage\x12\x11\n\tplayer_id\x18\x01 \x01(\t\x12\x13\n\x0bsender_name\x18\x02 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x0f\n\x07room_id\x18\x04 \x01(\t\"!\n\x0cLeaveRequest\x12\x11\n\tplayer_id\x18\x01 \x01(\t\"u\n\x0cStateRequest\x12\x11\n\tplayer_id\x18\x01 \x01(\t\x12\x13\n\x0bplayer_name\x18\x02 \x01(\t\x12\x12\n\nclass_type\x18\x03 \x01(\t\x12\n\n\x02hp\x18\x04 \x01(\x05\x12\x0c\n\x04mana\x18\x05 \x01(\x05\x12\x0f\n\x07room_id\x18\x06 \x01(\t\"\x19\n\x04Ping\x12\x11\n\tplayer_id\x18\x01 \x01(\t\"\x15\n\x04Pong\x12\r\n\x05\x61live\x18\x01 \x01(\x08\x32\xf9\x02\n\x0bMageService\x12>\n\tCastSpell\x12\x17.projetors.SpellRequest\x1a\x18.projetors.SpellResponse\x12@\n\x0eUpdatePosition\x12\x16.projetors.MoveRequest\x1a\x16.google.protobuf.Empty\x12=\n\x0bSendMessage\x12\x16.projetors.ChatMessage\x1a\x16.google.protobuf.Empty\x12<\n\tLeaveGame\x12\x17.projetors.LeaveRequest\x1a\x16.google.protobuf.Empty\x12<\n\tSyncState\x12\x17.projetors.StateRequest\x1a\x16.google.protobuf.Empty\x12-\n\tHeartbeat\x12\x0f.projetors.Ping\x1a\x0f.projetors.Pongb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'game_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
-  _globals['_SPELLREQUEST']._serialized_start=25
-  _globals['_SPELLREQUEST']._serialized_end=98
-  _globals['_SPELLRESPONSE']._serialized_start=100
-  _globals['_SPELLRESPONSE']._serialized_end=170
-  _globals['_MOVEREQUEST']._serialized_start=172
-  _globals['_MOVEREQUEST']._serialized_end=221
-  _globals['_STATEREQUEST']._serialized_start=223
-  _globals['_STATEREQUEST']._serialized_end=282
-  _globals['_PING']._serialized_start=284
-  _globals['_PING']._serialized_end=309
-  _globals['_PONG']._serialized_start=311
-  _globals['_PONG']._serialized_end=332
-  _globals['_EMPTY']._serialized_start=334
-  _globals['_EMPTY']._serialized_end=341
-  _globals['_MAGESERVICE']._serialized_start=344
-  _globals['_MAGESERVICE']._serialized_end=584
+  _globals['_SPELLREQUEST']._serialized_start=54
+  _globals['_SPELLREQUEST']._serialized_end=150
+  _globals['_SPELLRESPONSE']._serialized_start=152
+  _globals['_SPELLRESPONSE']._serialized_end=222
+  _globals['_MOVEREQUEST']._serialized_start=224
+  _globals['_MOVEREQUEST']._serialized_end=273
+  _globals['_CHATMESSAGE']._serialized_start=275
+  _globals['_CHATMESSAGE']._serialized_end=362
+  _globals['_LEAVEREQUEST']._serialized_start=364
+  _globals['_LEAVEREQUEST']._serialized_end=397
+  _globals['_STATEREQUEST']._serialized_start=399
+  _globals['_STATEREQUEST']._serialized_end=516
+  _globals['_PING']._serialized_start=518
+  _globals['_PING']._serialized_end=543
+  _globals['_PONG']._serialized_start=545
+  _globals['_PONG']._serialized_end=566
+  _globals['_MAGESERVICE']._serialized_start=569
+  _globals['_MAGESERVICE']._serialized_end=946
 # @@protoc_insertion_point(module_scope)

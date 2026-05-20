@@ -1,53 +1,57 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import grpc
 import asyncio
-import logging
+from google.protobuf import empty_pb2
 import game_pb2
 import game_pb2_grpc
+from ui.interface import Interface
 
 class MageServicer(game_pb2_grpc.MageServiceServicer):
-    def __init__(self, mage_instance):
-        # Recebe a instância do Mago (do core/mage.py) para alterar o HP/Mana
+    def __init__(self, mage_instance, game_engine):
         self.mage = mage_instance
-        # Lock para evitar que dois ataques em simultâneo corrompam o valor do HP
+        self.engine = game_engine
         self.lock = asyncio.Lock()
 
     async def CastSpell(self, request, context):
-        """Chamado quando outro jogador lança um feitiço contra ti."""
         async with self.lock:
-            # Tenta aplicar dano (o método take_damage já gere o escudo)
             hit, current_hp = self.mage.take_damage(request.damage)
-            
-            status_msg = f"Foste atingido por {request.element_type}!" if hit else "Escudo absorveu o ataque!"
-            print(f"\n[SERVER] {status_msg} HP atual: {current_hp}")
-
-            return game_pb2.SpellResponse(
-                shielded=not hit,
-                current_hp=current_hp,
-                message=status_msg
-            )
+            status_msg = f"{request.attacker_name} atingiu-te!" if hit else "Escudo ativado!"
+            Interface.show_message(status_msg)
+            print(f"\n[SERVER] {status_msg} HP: {current_hp}")
+            return game_pb2.SpellResponse(shielded=not hit, current_hp=current_hp, message=status_msg)
 
     async def UpdatePosition(self, request, context):
-        """Chamado quando um colega avisa que mudou de sala."""
-        print(f"\n[SERVER] O jogador {request.player_id} moveu-se para {request.room_id}.")
-        # Aqui poderias atualizar uma lista local de "quem está onde"
-        return game_pb2.Empty()
+        self.engine.update_player_room(request.player_id, request.room_id)
+        Interface.show_message(f"O jogador {request.player_id} moveu-se para {request.room_id}.")
+        return empty_pb2.Empty()
+
+    async def SendMessage(self, request, context):
+        if request.room_id == self.mage.room_id:
+            Interface.show_message(f"{request.sender_name}: {request.content}")
+        return empty_pb2.Empty()
+
+    async def SyncState(self, request, context):
+        self.engine.register_or_update_player(
+            request.player_id, request.player_name, "", request.room_id, request.hp, request.mana
+        )
+        return empty_pb2.Empty()
+
+    async def LeaveGame(self, request, context):
+        self.engine.remove_player(request.player_id)
+        Interface.show_message(f"O jogador {request.player_id} desconectou-se.")
+        return empty_pb2.Empty()
 
     async def Heartbeat(self, request, context):
-        """Mantém a rede P2P ciente de que ainda estás online."""
         return game_pb2.Pong(alive=True)
 
-async def serve(mage_instance, port):
-    """Inicia o servidor gRPC assíncrono."""
+async def serve(mage_instance, game_engine, port):
     server = grpc.aio.server()
-    game_pb2_grpc.add_MageServiceServicer_to_server(
-        MageServicer(mage_instance), server
-    )
-    
-    # ALTERAÇÃO: '0.0.0.0' garante que o servidor escuta pedidos de qualquer PC na rede LAN.
-    # '[::]' seria apenas para IPv6 e poderia causar falhas em redes IPv4.
+    game_pb2_grpc.add_MageServiceServicer_to_server(MageServicer(mage_instance, game_engine), server)
     listen_addr = f'0.0.0.0:{port}'
     server.add_insecure_port(listen_addr)
-    
-    print(f"[SERVER] Servidor gRPC iniciado em {listen_addr}")
+    print(f"[REDE] Servidor gRPC iniciado em {listen_addr}")
     await server.start()
     return server

@@ -2,21 +2,17 @@ import os
 import aioconsole
 
 class Interface:
+    # Buffer para as mensagens (para não perderes o histórico)
+    log_buffer = []
+
     @staticmethod
     def clear_screen():
-        # Limpa o terminal (Windows usa 'cls', Linux/Mac usa 'clear')
         os.system('cls' if os.name == 'nt' else 'clear')
 
     @staticmethod
     def render_map(current_room):
-        """Desenha uma planta simples 2x2 das 4 salas."""
-        rooms = {
-            "SALA_1": " ", "SALA_2": " ",
-            "SALA_3": " ", "SALA_4": " "
-        }
-        # Marca a sala onde o jogador está com um '@'
+        rooms = {"SALA_1": " ", "SALA_2": " ", "SALA_3": " ", "SALA_4": " "}
         rooms[current_room] = "@"
-
         print("       PLANTA DO LABORATÓRIO")
         print("      +-----------+-----------+")
         print(f"      |           |           |")
@@ -32,7 +28,6 @@ class Interface:
 
     @staticmethod
     def display_status(mage):
-        """Mostra a barra de vida e mana."""
         hp_bar = "█" * (mage.hp // 10) + "-" * (10 - (mage.hp // 10))
         mana_bar = "█" * (mage.mana // 10) + "-" * (10 - (mage.mana // 10))
         
@@ -40,16 +35,20 @@ class Interface:
         print(f" MAGO DE {mage.element} | ID: {mage.player_id}")
         print(f" HP:   [{hp_bar}] {mage.hp}/100")
         print(f" MANA: [{mana_bar}] {mage.mana}/100")
-        print(f" SALA ATUAL: {mage.current_room}")
+        print(f" SALA ATUAL: {mage.room_id}")
         print("==========================================")
-        print(" COMANDOS: MOVER [1-4] | ATACAR | ESCUDO | SAIR")
+        
+        # Log visual das últimas 10 mensagens
+        for msg in Interface.log_buffer[-10:]:
+            print(f"[LOG]: {msg}")
+            
         print("------------------------------------------")
+        print(" COMANDOS: MOVER [1-4] | ATACAR | ESCUDO | SAIR")
 
     @staticmethod
     async def get_input():
-        """Lê o input de forma assíncrona para não bloquear a rede."""
         return await aioconsole.ainput(">> ")
 
     @staticmethod
     def show_message(msg):
-        print(f"\n[EVENTO]: {msg}")
+        Interface.log_buffer.append(msg)
