@@ -56,50 +56,43 @@ class MageServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def CastSpell(self, request, context):
-        """ATACAR: Chamado quando um mago lança um feitiço contra ti
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def UpdatePosition(self, request, context):
-        """MOVER: Chamado para avisar os outros que entraste numa nova sala
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SendMessage(self, request, context):
-        """FALAR: Novo! Envia uma mensagem de chat para os outros na sala
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def LeaveGame(self, request, context):
-        """SAIR: Novo! Avisa os outros que te desconectaste para te removerem do ecrã
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SyncState(self, request, context):
-        """Chamado para sincronizar o estado (Mana/Vida/Classe) quando alguém entra na tua sala
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def Heartbeat(self, request, context):
-        """Um simples "estou vivo" para manter a rede ativa
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def PlayerDied(self, request, context):
-        """NOVO: RPC de morte
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')

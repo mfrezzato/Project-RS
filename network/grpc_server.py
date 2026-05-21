@@ -19,31 +19,33 @@ class MageServicer(game_pb2_grpc.MageServiceServicer):
     async def CastSpell(self, request, context):
         """Chamado quando outro jogador lança um feitiço contra ti."""
         async with self.lock:
-            # Consulta a sala no motor de jogo
+            # FIX 4: Rejeitar se o feitiço não é para nós
+            if request.target_id and request.target_id != self.mage.player_id:
+                return game_pb2.SpellResponse(
+                    shielded=False,
+                    current_hp=self.mage.hp,
+                    message="Ataque não te atingiu."
+                )
+
+            # Validação de sala (existente)
             attacker_room = self.engine.get_player_room(request.attacker_name)
-            
-            # Validação: Só bloqueamos se soubermos onde o jogador está E for uma sala diferente.
-            # Se attacker_room for None (desconhecido), permitimos o ataque para não bloquear o jogo.
             if attacker_room is not None and attacker_room != self.mage.room_id:
                 return game_pb2.SpellResponse(
-                    shielded=True, 
-                    current_hp=self.mage.hp, 
+                    shielded=True,
+                    current_hp=self.mage.hp,
                     message="Ataque bloqueado: Estás noutra sala!"
                 )
 
-            # Aplica o dano no objeto Mage
             hit, current_hp = self.mage.take_damage(request.damage)
-            
+
             if hit:
                 status_msg = f"Foste atingido por {request.attacker_name} com {request.element_type}!"
             else:
                 status_msg = f"Absorveste o ataque de {request.attacker_name} usando o Escudo!"
-            
-            # Feedback visual
-            Interface.show_message(status_msg)
-            print(f"\n[COMBATE] {status_msg} (HP Atual: {current_hp})")
 
-            # Resposta gRPC
+            # FIX 5: Apenas show_message, sem print() direto que polui o terminal
+            Interface.show_message(status_msg)
+
             return game_pb2.SpellResponse(
                 shielded=not hit,
                 current_hp=current_hp,
@@ -58,6 +60,11 @@ class MageServicer(game_pb2_grpc.MageServiceServicer):
 
     async def SendMessage(self, request, context):
         """Chamado quando alguém envia uma mensagem de chat."""
+        # NOVO: Detetar sinal de início de jogo (sentinel enviado pelo host)
+        if request.content == "__START_GAME__" and request.room_id == "LOBBY":
+            self.mage.game_started_event.set()
+            return empty_pb2.Empty()
+
         if request.room_id == self.mage.room_id:
             Interface.show_message(f"[{request.room_id}] {request.sender_name}: {request.content}")
         return empty_pb2.Empty()

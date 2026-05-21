@@ -18,27 +18,24 @@ class MageClient:
         self.my_id = my_id
         self.my_name = my_name  # NOVO: Guardamos o nome do jogador
 
-    async def cast_spell(self, target_addr, damage, element):
+    async def cast_spell(self, target_addr, damage, element, target_id=""):
         """Envia um ataque para o IP:PORTA de um adversário."""
-        print(f"[DEBUG] A tentar conectar ao servidor em: {target_addr}")
         try:
             async with grpc.aio.insecure_channel(target_addr) as channel:
                 stub = game_pb2_grpc.MageServiceStub(channel)
-                
                 response = await stub.CastSpell(game_pb2.SpellRequest(
                     attacker_id=self.my_id,
-                    attacker_name=self.my_name, # NOVO: Envia o nome
+                    attacker_name=self.my_name,
                     damage=damage,
-                    element_type=element
+                    element_type=element,
+                    target_id=target_id  # FIX 4: novo campo
                 ), timeout=2.0)
-                print(f"[DEBUG] Resposta recebida do servidor: {response.message}")
                 return response
-        except grpc.aio.AioRpcError as e:
+        except grpc.aio.AioRpcError:
             logging.warning(f"[CLIENT] Falha ao atacar {target_addr}. Pode estar offline.")
             return None
         except Exception as e:
             logging.error(f"[CLIENT] Erro inesperado ao atacar {target_addr}: {e}")
-            print(f"[ERRO GRPCCLIENT] Falha ao conectar a {target_addr}: {e}")
             return None
 
     async def notify_move(self, target_addr, new_room):
@@ -103,3 +100,18 @@ class MageClient:
                 return response.alive
         except grpc.aio.AioRpcError:
             return False
+        
+    async def broadcast_start_game(self, target_addr):
+        """Envia sinal de início de jogo para um peer no lobby."""
+        await self.send_chat_message(target_addr, "LOBBY", "__START_GAME__")
+
+    async def notify_death(self, target_addr, dead_player_id):
+        """Correcção: método em falta. Avisa os outros que um jogador morreu."""
+        try:
+            async with grpc.aio.insecure_channel(target_addr) as channel:
+                stub = game_pb2_grpc.MageServiceStub(channel)
+                await stub.PlayerDied(game_pb2.PlayerDiedRequest(
+                    player_id=dead_player_id
+                ), timeout=1.0)
+        except grpc.aio.AioRpcError:
+            pass
