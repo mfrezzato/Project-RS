@@ -2,55 +2,42 @@ syntax = "proto3";
 
 package projetors;
 
-// Importa o tipo Empty oficial do Google
 import "google/protobuf/empty.proto";
 
 service MageService {
-  // ATACAR: Chamado quando um mago lança um feitiço contra ti
   rpc CastSpell (SpellRequest) returns (SpellResponse);
-  
-  // MOVER: Chamado para avisar os outros que entraste numa nova sala
   rpc UpdatePosition (MoveRequest) returns (google.protobuf.Empty);
-  
-  // FALAR: Novo! Envia uma mensagem de chat para os outros na sala
   rpc SendMessage (ChatMessage) returns (google.protobuf.Empty);
-  
-  // SAIR: Novo! Avisa os outros que te desconectaste para te removerem do ecrã
   rpc LeaveGame (LeaveRequest) returns (google.protobuf.Empty);
-  
-  // Chamado para sincronizar o estado (Mana/Vida/Classe) quando alguém entra na tua sala
   rpc SyncState (StateRequest) returns (google.protobuf.Empty);
-  
-  // Um simples "estou vivo" para manter a rede ativa
   rpc Heartbeat (Ping) returns (Pong);
-
-  // NOVO: RPC de morte
   rpc PlayerDied(PlayerDiedRequest) returns (google.protobuf.Empty);
 }
 
 message SpellRequest {
-  string attacker_id = 1;
-  string attacker_name = 2; // Útil para aparecer no ecrã: "João atacou-te!"
-  int32 damage = 3;
-  string element_type = 4;  // "FOGO", "GELO", "TERRA", "AR"
+  string attacker_id   = 1;
+  string attacker_name = 2;
+  int32  damage        = 3;
+  string element_type  = 4;
+  string target_id     = 5;  
 }
 
 message SpellResponse {
-  bool shielded = 1;      // Se a vítima usou defesa
-  int32 current_hp = 2;   // A vida que sobrou à vítima
-  string message = 3;     // Ex: "Ataque falhou, escudo ativado!"
+  bool   shielded    = 1;
+  int32  current_hp  = 2;
+  string message     = 3;
 }
 
 message MoveRequest {
   string player_id = 1;
-  string room_id = 2;     // "SALA_1", "SALA_2", etc.
+  string room_id   = 2;
 }
 
 message ChatMessage {
-  string player_id = 1;
+  string player_id   = 1;
   string sender_name = 2;
-  string content = 3;     // O texto da mensagem
-  string room_id = 4;     // Para saber se a mensagem é para a mesma sala
+  string content     = 3;
+  string room_id     = 4;
 }
 
 message LeaveRequest {
@@ -58,12 +45,12 @@ message LeaveRequest {
 }
 
 message StateRequest {
-  string player_id = 1;
+  string player_id   = 1;
   string player_name = 2;
-  string class_type = 3; // "FOGO", "GELO"
-  int32 hp = 4;
-  int32 mana = 5;
-  string room_id = 6;
+  string class_type  = 3;
+  int32  hp          = 4;
+  int32  mana        = 5;
+  string room_id     = 6;
 }
 
 message Ping {
@@ -75,5 +62,5 @@ message Pong {
 }
 
 message PlayerDiedRequest {
-   string player_id = 1; 
+  string player_id = 1;
 }

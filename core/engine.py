@@ -1,15 +1,23 @@
 class GameEngine:
     def __init__(self):
-        # Define as salas e as suas conexões (quem liga a quem)
+        # Grelha 3x3:
+        # SALA_1 -- SALA_2 -- SALA_3
+        #   |          |          |
+        # SALA_4 -- SALA_5 -- SALA_6
+        #   |          |          |
+        # SALA_7 -- SALA_8 -- SALA_9
         self.mapa = {
-            "SALA_1": ["SALA_2", "SALA_3"],
-            "SALA_2": ["SALA_1", "SALA_4"],
-            "SALA_3": ["SALA_1", "SALA_4"],
-            "SALA_4": ["SALA_2", "SALA_3"]
+            "SALA_1": ["SALA_2", "SALA_4"],
+            "SALA_2": ["SALA_1", "SALA_3", "SALA_5"],
+            "SALA_3": ["SALA_2", "SALA_6"],
+            "SALA_4": ["SALA_1", "SALA_5", "SALA_7"],
+            "SALA_5": ["SALA_2", "SALA_4", "SALA_6", "SALA_8"],
+            "SALA_6": ["SALA_3", "SALA_5", "SALA_9"],
+            "SALA_7": ["SALA_4", "SALA_8"],
+            "SALA_8": ["SALA_5", "SALA_7", "SALA_9"],
+            "SALA_9": ["SALA_6", "SALA_8"],
         }
         
-        # NOVO: A "Caderneta" de outros jogadores no jogo
-        # Formato: { "id_123": {"name": "João", "addr": "192.168.1.5:50051", "room": "SALA_1", "hp": 100, ...} }
         self.players = {}
 
     def validar_movimento(self, sala_atual, sala_destino):
