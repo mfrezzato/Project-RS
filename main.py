@@ -32,6 +32,8 @@ async def run_lobby(mage, engine, dht, client, interface, player_id, meu_ip, grp
 
     while mage.in_lobby:
         # FIX 1: DHT é consultada a cada iteração (inclui refreshes por timeout)
+        await dht.announce_presence(player_id, meu_ip, grpc_port, "LOBBY")
+
         lobby_peers = await dht.get_players_in_room("LOBBY")
         interface.clear_screen()
         interface.render_lobby(lobby_peers)
