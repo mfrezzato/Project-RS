@@ -8,13 +8,21 @@ import tty
 from rich.live import Live
 from rich.console import Console
 
-from core.mage import Mage
+from core.classes import MagoGelo, MagoFogo, MagoAr, MagoTerra, MagoNegro
+from core.classes.actions import handle_attack, handle_skill, handle_ultimate
 from core.engine import GameEngine
 from network.dht_handler import DHTHandler
 from network.grpc_server import serve
 from network.grpc_client import MageClient
 from ui.interface import Interface
 
+CLASSES = {
+    "GELO":  MagoGelo,
+    "FOGO":  MagoFogo,
+    "AR":    MagoAr,
+    "TERRA": MagoTerra,
+    "NEGRO": MagoNegro,
+}
 
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -160,7 +168,7 @@ async def run_lobby(mage, engine, dht, client, player_id, meu_ip, grpc_port, liv
                 Interface.show_message("[LOBBY] Jogo iniciado por ti! A mover para SALA_1...")
                 return True
 
-            elif cmd in ("ATACAR", "ESCUDO"):
+            elif cmd in ("ATACAR1", "ATACAR2", "SKILL", "ULTIMATE"):
                 Interface.show_message("O jogo ainda não começou.")
 
             elif cmd == "SAIR":
@@ -219,57 +227,23 @@ async def run_game(mage, engine, dht, client, player_id, meu_ip, grpc_port, live
                 else:
                     Interface.show_message("Caminho bloqueado!")
 
-            elif cmd == "ATACAR":
-                inimigos = await dht.get_players_in_room(mage.room_id)
-                alvos = {pid: addr for pid, addr in inimigos.items() if pid != player_id}
+            elif cmd in ("ATACAR1", "ATACAR2"):
+                mage.attack_mode = "ataque1" if cmd == "ATACAR1" else "ataque2"
+                # ... lógica de escolha do alvo igual ao que já tens ...
+                if target_pid:
+                    dano, custo, skill = mage.get_attack_info()
+                    await handle_attack(mage, skill, dano, custo, alvos, client, player_id, Interface)
 
-                if not alvos:
-                    Interface.show_message("Sala vazia...")
-                else:
-                    lista_ids = list(alvos.keys())
-                    if len(lista_ids) == 1:
-                        target_pid = lista_ids[0]
-                    else:
-                        Interface.show_message("=== ESCOLHE UM ALVO (escreve o número) ===")
-                        for i, pid in enumerate(lista_ids):
-                            Interface.show_message(f"  [{i + 1}] {pid}")
+            elif cmd == "SKILL":
+                destino = await handle_skill(mage, engine, dht, client, player_id, meu_ip, grpc_port, Interface)
+                if destino:
+                    old_room = mage.room_id
+                    mage.room_id = destino
+                    await dht.remove_from_room(player_id, old_room)
+                    await dht.announce_presence(player_id, meu_ip, grpc_port, destino)
 
-                        Interface.set_input_buffer("", prompt="Alvo >>")
-                        escolha_raw = await live_input.get_command(timeout=15.0)
-                        Interface.set_input_buffer("", prompt=">>")
-
-                        target_pid = None
-                        if escolha_raw is None:
-                            Interface.show_message("Tempo esgotado. Ataque cancelado.")
-                        else:
-                            escolha = escolha_raw.strip()
-                            if escolha.isdigit():
-                                idx = int(escolha) - 1
-                                if 0 <= idx < len(lista_ids):
-                                    target_pid = lista_ids[idx]
-                                else:
-                                    Interface.show_message("Número inválido.")
-                            else:
-                                tpid = escolha.upper()
-                                if tpid in alvos:
-                                    target_pid = tpid
-                                else:
-                                    Interface.show_message(f"'{escolha}' não está na sala.")
-
-                    if target_pid:
-                        dano, custo, skill = mage.get_attack_info()
-                        if mage.use_mana(custo):
-                            res = await client.cast_spell(
-                                alvos[target_pid], dano, mage.element, target_pid
-                            )
-                            if res:
-                                Interface.show_message(f"[{skill}] -> {target_pid}: {res.message}")
-                        else:
-                            Interface.show_message("Mana insuficiente!")
-
-            elif cmd == "ESCUDO":
-                sucesso, msg = mage.activate_shield()
-                Interface.show_message(msg)
+            elif cmd == "ULTIMATE":
+                await handle_ultimate(mage, engine, dht, client, player_id, Interface)
 
             elif cmd == "SAIR":
                 break
@@ -288,7 +262,9 @@ async def main():
     grpc_port = int(sys.argv[3])
     bootstrap_ip = sys.argv[4] if len(sys.argv) > 4 else None
 
-    mage = Mage(player_id, player_id, element)
+    mage_class = CLASSES.get(element, MagoFogo)
+    mage = mage_class(player_id, player_id)
+
     engine = GameEngine()
     dht = DHTHandler()
     client = MageClient(player_id, player_id)

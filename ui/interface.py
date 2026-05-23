@@ -184,8 +184,10 @@ class Interface:
         cmds = Text.from_markup(
             "[grey50]COMANDOS:[/]  "
             "[bold bright_green]MOVER <N>[/]  [grey50]|[/]  "
-            "[bold bright_green]ATACAR[/]  [grey50]|[/]  "
-            "[bold bright_green]ESCUDO[/]  [grey50]|[/]  "
+            "[bold bright_green]ATACAR1[/]  [grey50]|[/]  "
+            "[bold bright_green]ATACAR2[/]  [grey50]|[/]  "
+            "[bold bright_green]SKILL[/]  [grey50]|[/]  "
+            "[bold bright_green]ULTIMATE[/]  [grey50]|[/]  "
             "[bold bright_green]SAIR[/]"
         )
 
