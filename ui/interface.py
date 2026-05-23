@@ -166,8 +166,7 @@ class Interface:
     @staticmethod
     def _map_stats_panel(mage):
         room = mage.room_id if mage else None
-        body = Group(Align.center(Interface._map_grid(room)),
-                     Text(""), Interface._stats_grid(mage))
+        body = Align.center(Interface._map_grid(room))
         return Panel(body, title="[bold green]MAPA & ESTADO[/]",
                      border_style="green", box=ROUNDED, padding=(1, 1))
 
@@ -222,10 +221,16 @@ class Interface:
     def _players_panel(mage):
         body = Table.grid(padding=(0, 0))
         body.add_column()
+        
         if mage is not None:
+            # NOVO: Inserir o estado vital (HP, Mana, Escudo, Sala) no topo absoluto do painel
+            body.add_row(Interface._stats_grid(mage))
+            body.add_row(Text("")) # Linha em branco para separar as barras do resto do texto
+            
             body.add_row(Text.from_markup(
                 f"[bold]O teu mago:[/]  {_elem_label(mage.element)}  "
                 f"[grey62]({mage.player_id})[/]"))
+        
         body.add_row(Text(""))
         body.add_row(Text("Jogadores nesta sala:", style="bold underline"))
 
@@ -235,6 +240,7 @@ class Interface:
                 body.add_row(Text.from_markup(f"  - [white]{pid}[/]   {_elem_label(element)}"))
         else:
             body.add_row(Text("  (estas sozinho aqui)", style="grey50"))
+            
         return Panel(body, title="[bold cyan]MAGOS NA SALA[/]",
                      border_style="cyan", box=ROUNDED, padding=(1, 1))
 
