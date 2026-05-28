@@ -1,11 +1,10 @@
+import time as _time
+
+
 class GameEngine:
+    MAX_WINS = 4
+
     def __init__(self):
-        # Grelha 3x3:
-        # SALA_1 -- SALA_2 -- SALA_3
-        #   |          |          |
-        # SALA_4 -- SALA_5 -- SALA_6
-        #   |          |          |
-        # SALA_7 -- SALA_8 -- SALA_9
         self.mapa = {
             "SALA_1": ["SALA_2", "SALA_4"],
             "SALA_2": ["SALA_1", "SALA_3", "SALA_5"],
@@ -17,62 +16,128 @@ class GameEngine:
             "SALA_8": ["SALA_5", "SALA_7", "SALA_9"],
             "SALA_9": ["SALA_6", "SALA_8"],
         }
-        
-        self.players = {}
+        self.players          = {}
+        self.round_scores     = {}
+        self.alive_this_round = set()
+        self.current_round    = 0
+        self.room_effects     = {}
 
+    # ── Mapa ─────────────────────────────────────────────────────────────────
     def validar_movimento(self, sala_atual, sala_destino):
-        """Verifica se o mago pode ir para a sala que escolheu."""
-        if sala_destino in self.mapa.get(sala_atual, []):
-            return True
-        return False
+        return sala_destino in self.mapa.get(sala_atual, [])
 
-    def calcular_dano_elemental(self, tipo_ataque, tipo_defesa):
-        """Opcional: Lógica de fraquezas (Ex: Fogo dá +10 de dano contra Gelo)."""
-        return 0
-
-    # ==========================================
-    # NOVO: GESTÃO DE ESTADO DESCENTRALIZADO
-    # ==========================================
-
-    def register_or_update_player(self, player_id, name, addr, room_id, hp, mana):
-        """Adiciona um novo jogador à lista ou atualiza os seus dados se já existir."""
+    # ── Jogadores ─────────────────────────────────────────────────────────────
+    def register_or_update_player(self, player_id, name, addr=None,
+                                   room_id="", hp=100, mana=100, element="?"):
+        existing = self.players.get(player_id, {})
         self.players[player_id] = {
-            "name": name,
-            "addr": addr,      # O IP e a Porta gRPC deste jogador
+            "name":    name,
+            "addr":    addr if addr else existing.get("addr", ""),
             "room_id": room_id,
-            "hp": hp,
-            "mana": mana
+            "hp":      hp,
+            "mana":    mana,
+            "element": (element if element and element != "?"
+                        else existing.get("element", "?")),
+            # preserva alive=False se já estava marcado como morto
+            "alive":   existing.get("alive", True),
         }
 
     def update_player_room(self, player_id, new_room_id):
-        """Atualiza apenas a sala de um jogador (usado quando alguém se move)."""
         if player_id in self.players:
             self.players[player_id]["room_id"] = new_room_id
 
-    def remove_player(self, player_id):
-        """Remove um jogador da nossa visão do mundo (usado quando ele sai do jogo)."""
+    def update_player_hp(self, player_id, hp):
         if player_id in self.players:
-            del self.players[player_id]
+            self.players[player_id]["hp"] = max(0, hp)
+
+    def remove_player(self, player_id):
+        self.players.pop(player_id, None)
+        self.alive_this_round.discard(player_id)
+
+    def mark_player_dead(self, player_id):
+        """Marca como morto (some dos alvos/UI) mas mantém addr para broadcasts."""
+        if player_id in self.players:
+            self.players[player_id]["alive"] = False
+        self.alive_this_round.discard(player_id)
 
     def get_players_in_room(self, room_id, exclude_id=None):
-        """
-        Retorna uma lista com os 'endereços (IP:Porta)' de todos os jogadores
-        que estão numa sala específica. Útil para Broadcast (Chat, Combate, etc).
-        """
-        addresses = []
-        for pid, data in self.players.items():
-            if data["room_id"] == room_id:
-                if pid != exclude_id: # Para não enviarmos mensagens a nós próprios
-                    addresses.append(data["addr"])
-        return addresses
+        """Endereços de jogadores vivos numa sala (para notificações internas)."""
+        return [
+            d["addr"] for pid, d in list(self.players.items())
+            if d["room_id"] == room_id
+            and pid != exclude_id
+            and d.get("addr")
+            and d.get("alive", True)
+        ]
 
     def get_player_room(self, player_id):
-        """Retorna a sala do jogador pelo ID, ou None se o jogador não existir."""
-        player_data = self.players.get(player_id)
-        if player_data:
-            return player_data.get("room_id")
-        return None
-        
+        d = self.players.get(player_id)
+        return d.get("room_id") if d else None
+
     def get_all_known_addresses(self):
-        """Retorna os endereços de toda a gente na rede que nós conhecemos."""
-        return [data["addr"] for data in self.players.values()]
+        """Todos os endereços incluindo mortos — usado para broadcasts de ronda."""
+        return [d["addr"] for d in self.players.values() if d.get("addr")]
+
+    # ── Efeitos de sala ───────────────────────────────────────────────────────
+    def set_room_effect(self, room_id, effect, duration):
+        if room_id not in self.room_effects:
+            self.room_effects[room_id] = {}
+        self.room_effects[room_id][effect] = _time.monotonic() + duration
+
+    def _room_has_effect(self, room_id, effect):
+        effects = self.room_effects.get(room_id, {})
+        expire  = effects.get(effect)
+        if expire is None:
+            return False
+        if _time.monotonic() >= expire:
+            effects.pop(effect, None)
+            return False
+        return True
+
+    def is_room_locked(self, room_id):
+        return self._room_has_effect(room_id, "locked")
+
+    def is_room_lava(self, room_id):
+        return self._room_has_effect(room_id, "lava")
+
+    def is_room_wasteland(self, room_id):
+        return self._room_has_effect(room_id, "wasteland")
+
+    def active_room_effects(self, room_id):
+        return [e for e in list(self.room_effects.get(room_id, {}).keys())
+                if self._room_has_effect(room_id, e)]
+
+    # ── Sistema de rondas ─────────────────────────────────────────────────────
+    def start_new_round(self, all_player_ids):
+        self.current_round += 1
+        self.alive_this_round = set(all_player_ids)
+        for pid in all_player_ids:
+            self.round_scores.setdefault(pid, 0)
+            if pid in self.players:
+                self.players[pid]["alive"]   = True
+                self.players[pid]["room_id"] = ""  # limpa sala obsoleta — preenchida via SyncState
+
+    def remove_from_alive(self, player_id):
+        self.alive_this_round.discard(player_id)
+
+    def is_last_alive(self, player_id):
+        return (player_id in self.alive_this_round
+                and len(self.alive_this_round) == 1)
+
+    def add_round_win(self, player_id):
+        self.round_scores[player_id] = self.round_scores.get(player_id, 0) + 1
+
+    def get_champion(self):
+        for pid, wins in self.round_scores.items():
+            if wins >= self.MAX_WINS:
+                return pid
+        return None
+
+    def get_leaderboard(self, top_n=8):
+        ranked = sorted(self.round_scores.items(),
+                        key=lambda x: x[1], reverse=True)
+        result = []
+        for pid, wins in ranked[:top_n]:
+            data = self.players.get(pid, {})
+            result.append((pid, wins, data.get("element", "?")))
+        return result
