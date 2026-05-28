@@ -29,3 +29,16 @@
 
 4. Iniciar o Jogo
 
+- python3 main.py <Nome do jogador> <Classe do jogador> <tcp.port> 
+
+// Para jogar em mais de um PC
+- python3 main.py <Nome do jogador> <Classe do jogador> <tcp.port> 192.168.0.<Ip pc do host>
+
+// Para jogar em 2 ou mais terminais
+- python3 main.py <Nome do jogador> <Classe do jogador> <tcp.port> 127.0.0.1
+
+
+
+
+
+
